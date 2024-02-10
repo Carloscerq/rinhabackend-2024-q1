@@ -12,20 +12,12 @@ void func_example_2() {
 }
 
 int main() {
-  log_info("Starting server...");
-  log_info("This is a info message");
-  log_error("This is a error message");
-  log_debug("This is a debug message");
-
-  Linked_List *llist = llist_create();
-  log_info("Adding functions to linked list");
-  llist_add(llist, "path1", func_example_1);
-  llist_add(llist, "path2", func_example_2);
-  log_info("Getting function from linked list");
-  Linked_List_Node *node = llist_get(llist, "path1");
-  log_info("Executing function from linked list");
-  ((void (*)())node->callback)();
-
+  log_info("Configuring server...");
   Server_Configs *server_configs = server_configs_create(8080);
+
+  log_info("Adding functions to server...");
+  server_add_route(server_configs, "/", func_example_1, METHOD_GET);
+
+  log_info("Starting server...");
   server_start(server_configs);
 }

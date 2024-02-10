@@ -1,7 +1,9 @@
 #include "headers/server.h"
 #include "headers/logs.h"
 #include "stdlib.h"
+#include <bits/pthreadtypes.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +50,21 @@ void server_stop(Server_Configs *server_configs) {
   close(server_configs->socket_fd);
 }
 
+void server_add_route(Server_Configs *configs, char *route, void *callback,
+                      char *method) {
+  llist_add(configs->routes, route, callback, method);
+}
+
+void *server_handle_request(void *args) {
+  Server_Handle_Args *server_args = (Server_Handle_Args *)args;
+
+  char buffer[BUFFER_SIZE] = {0};
+  int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
+  log_debug(buffer);
+
+  return NULL;
+}
+
 void server_start(Server_Configs *server_configs) {
   while (1) {
     struct sockaddr_in client_address;
@@ -61,8 +78,12 @@ void server_start(Server_Configs *server_configs) {
       exit(EXIT_FAILURE);
     }
 
-    char buffer[BUFFER_SIZE] = {0};
-    int valread = read(*client_fd, buffer, BUFFER_SIZE);
-    log_info(buffer);
+    Server_Handle_Args *args = malloc(sizeof(Server_Handle_Args));
+    args->client_fd = client_fd;
+    args->routes = server_configs->routes;
+
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, server_handle_request, args);
+    pthread_detach(thread_id);
   }
 }
