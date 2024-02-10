@@ -5,7 +5,7 @@
 int hash(char *key, int size) {
   int hash = 0;
   for (int i = 0; key[i] != '\0'; i++) {
-    hash = (hash * key[i]) % size;
+    hash = (hash + key[i]) % size;
   }
   log_debug("Hashed new entry");
   char hash_str = (char)hash + '0';
@@ -43,6 +43,11 @@ void hashtable_insert(HashTable *table, char *key, void *value) {
   node->key = key;
   node->value = value;
 
+  if (hashtable_find_node(table, key) < 0) {
+    log_error("Entry already exists on hash table");
+    return;
+  }
+
   if (table->count == table->size) {
     log_error("Table is full");
     return;
@@ -74,6 +79,7 @@ int hashtable_find_node(HashTable *table, char *key) {
       return index;
     } else {
       HashTable_Node *current = table->table[index];
+      int old_index = index;
       do {
         index = (index + 1) % table->size;
         if (table->table[index] != NULL) {
@@ -81,6 +87,10 @@ int hashtable_find_node(HashTable *table, char *key) {
             log_debug("Entry found on hash table");
             return index;
           }
+        }
+
+        if (index == old_index) {
+          break;
         }
       } while (current != NULL);
     }

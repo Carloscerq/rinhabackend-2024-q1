@@ -1,5 +1,6 @@
 #include "headers/logs.h"
 #include "headers/htable.h"
+#include "headers/server.h"
 #include <stdlib.h>
 
 void func_example_1() {
@@ -46,4 +47,6 @@ int main() {
     log_info("Function not found");
   }
 
+  Server_Configs *server_configs = server_configs_create(8080);
+  server_start(server_configs);
 }
