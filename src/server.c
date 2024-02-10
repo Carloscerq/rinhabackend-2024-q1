@@ -1,6 +1,7 @@
 #include "headers/server.h"
 #include "headers/llist.h"
 #include "headers/logs.h"
+#include "headers/routes.h"
 #include <netinet/in.h>
 #include <pthread.h>
 #include <regex.h>
@@ -34,14 +35,14 @@ void server_add_route(Server_Configs *configs, char *route, void *callback,
   llist_add(configs->routes, route, callback, method);
 }
 
-Server_Response *func_example_(char *buffer) {
+Route_Response *func_example_(char *buffer) {
   log_info(buffer);
   char *response = "OK ----- This is the response from the server\nHello world";
 
   log_info("Here is the client_fd:");
-  Server_Response *server_response = malloc(sizeof(Server_Response));
-  server_response->response = response;
-  server_response->response_length = strlen(response);
+  Route_Response *server_response = malloc(sizeof(Route_Response));
+  server_response->body = response;
+  server_response->body_length = strlen(response);
   server_response->status_code = "200";
   server_response->status_message = "ok";
   return server_response;
@@ -56,14 +57,14 @@ void *server_handle_request(void *args) {
   int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
   log_info("Request handled");
 
-  Server_Response *response = func_example_(buffer);
+  Route_Response *response = func_example_(buffer);
 
   char resp[BUFFER_SIZE * 2];
   snprintf(resp, BUFFER_SIZE * 2,
            "http/1.1 %s %s\r\ncontent-type: text/plain\r\ncontent-length: "
            "%d\r\n\r\n%s",
            response->status_code, response->status_message,
-           response->response_length, response->response);
+           response->body_length, response->body);
   send(*server_args->client_fd, resp, BUFFER_SIZE * 2, 0);
   return NULL;
 }

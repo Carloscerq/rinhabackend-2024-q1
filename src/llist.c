@@ -17,7 +17,7 @@ void llist_destroy(Linked_List *list) {
   free(list);
 }
 
-void llist_add(Linked_List *list, char *path, void *callback, char *method) {
+void llist_add(Linked_List *list, char *path, Route_Response *callback, char *method) {
   Linked_List_Node *node = (Linked_List_Node *)malloc(sizeof(Linked_List_Node));
   node->path = path;
   node->callback = callback;

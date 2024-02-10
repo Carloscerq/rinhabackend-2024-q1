@@ -24,7 +24,7 @@ int main() {
   Server_Configs *server_configs = server_configs_create(8080);
 
   log_info("Adding functions to server...");
-  server_add_route(server_configs, "/", func_example_1, METHOD_GET);
+  server_add_route(server_configs, "/abc", func_example_1, METHOD_GET);
 
   log_info("Starting server...");
   server_start(server_configs);
