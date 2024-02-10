@@ -10,11 +10,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #define BUFFER_SIZE 1024
-#define MAX_CONNECTIONS 3
+#define MAX_CONNECTIONS 10
 #define PORT 8080
-#define RESPONSE                                                               \
-  "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: "            \
-  "12\r\n\r\nHello, World"
+
 Server_Configs *server_configs_create(int port) {
   Server_Configs *server_configs = malloc(sizeof(Server_Configs));
   server_configs->port = port;
@@ -36,50 +34,37 @@ void server_add_route(Server_Configs *configs, char *route, void *callback,
   llist_add(configs->routes, route, callback, method);
 }
 
+Server_Response *func_example_(char *buffer) {
+  log_info(buffer);
+  char *response = "OK ----- This is the response from the server\nHello world";
+
+  log_info("Here is the client_fd:");
+  Server_Response *server_response = malloc(sizeof(Server_Response));
+  server_response->response = response;
+  server_response->response_length = strlen(response);
+  server_response->status_code = "200";
+  server_response->status_message = "ok";
+  return server_response;
+}
+
 void *server_handle_request(void *args) {
   Server_Handle_Args *server_args = (Server_Handle_Args *)args;
   int socket_fd = *server_args->client_fd;
   log_info("Handling request");
-  send(socket_fd, RESPONSE, 100, 0);
-  return NULL;
 
-  char buffer[BUFFER_SIZE] = {0};
+  char buffer[BUFFER_SIZE];
   int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
+  log_info("Request handled");
 
-  Linked_List_Node *node = server_args->routes->head;
-  while (node != NULL) {
-    regex_t path_regex, method_regex;
-    if (regcomp(&path_regex, node->path, 0) != 0 ||
-        regcomp(&method_regex, node->method, 0) != 0) {
-      log_error("Error compiling regex");
-      exit(EXIT_FAILURE);
-    }
+  Server_Response *response = func_example_(buffer);
 
-    int path_match = regexec(&path_regex, buffer, 0, NULL, 0);
-    int method_match = regexec(&method_regex, buffer, 0, NULL, 0);
-
-    if (path_match != 0 || method_match != 0) {
-      log_debug("Route does not match request, trying next route");
-      node = node->next;
-      continue;
-    }
-
-    if (path_match == 0 && method_match == 0) {
-      void (*callback)(int *, char *) = node->callback;
-      callback(server_args->client_fd, buffer);
-      free(server_args);
-      return NULL;
-    }
-
-    if (path_match == 0) {
-      log_error("Method not allowed");
-      return NULL;
-    }
-  }
-
-  log_debug("No route found for request");
-  send(*server_args->client_fd, "HTTP/1.1 404 Not Found\n", 22, 0);
-
+  char resp[BUFFER_SIZE * 2];
+  snprintf(resp, BUFFER_SIZE * 2,
+           "http/1.1 %s %s\r\ncontent-type: text/plain\r\ncontent-length: "
+           "%d\r\n\r\n%s",
+           response->status_code, response->status_message,
+           response->response_length, response->response);
+  send(*server_args->client_fd, resp, BUFFER_SIZE * 2, 0);
   return NULL;
 }
 
@@ -119,7 +104,7 @@ void server_start(Server_Configs *server_configs) {
   int *new_socket = malloc(sizeof(int));
   while (1) {
     if ((*new_socket = accept(server_fd, (struct sockaddr *)&address,
-                             (socklen_t *)&addrlen)) < 0) {
+                              (socklen_t *)&addrlen)) < 0) {
       perror("accept");
       exit(EXIT_FAILURE);
     }
@@ -132,4 +117,3 @@ void server_start(Server_Configs *server_configs) {
     pthread_detach(thread);
   }
 }
-
