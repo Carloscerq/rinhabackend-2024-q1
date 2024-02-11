@@ -87,3 +87,13 @@ Transacoes_Body *parse_transacoes_json(char *json) {
 
   return transacoes;
 }
+
+char *get_environment_variable(char *variable_name) {
+  char *resp = getenv(variable_name);
+
+  if (!resp) {
+    log_error("Error getting env");
+    log_error(variable_name);
+    exit(EXIT_FAILURE);
+  }
+}

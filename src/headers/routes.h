@@ -1,4 +1,5 @@
 #pragma once
+#include <libpq-fe.h>
 
 typedef struct Route_Response {
   char *body;
@@ -13,5 +14,5 @@ typedef struct Transacoes_Body {
   char *description;
 } Transacoes_Body;
 
-Route_Response *route_transacoes(char *path, char *body);
-Route_Response *route_extrato(char *path, char *body);
+Route_Response *route_transacoes(char *path, char *body, PGconn *database);
+Route_Response *route_extrato(char *path, char *body, PGconn *database);

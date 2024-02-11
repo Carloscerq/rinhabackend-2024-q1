@@ -17,10 +17,11 @@
 #define PATH_SIZE 256
 #define PROTOCOL_SIZE 10
 
-Server_Configs *server_configs_create(int port) {
+Server_Configs *server_configs_create(int port, PGconn *db_conn) {
   Server_Configs *server_configs = malloc(sizeof(Server_Configs));
   server_configs->port = port;
   server_configs->routes = llist_create();
+  server_configs->database = db_conn;
 
   return server_configs;
 }
@@ -34,7 +35,8 @@ void server_stop(Server_Configs *server_configs) {
 }
 
 void server_add_route(Server_Configs *configs, char *route,
-                      Route_Response *(*handler)(char *path, char *body),
+                      Route_Response *(*handler)(char *path, char *body,
+                                                 PGconn *database),
                       char *method) {
   llist_add(configs->routes, route, handler, method);
 }
@@ -67,7 +69,7 @@ void *server_handle_request(void *args) {
     path_reti = regexec(&path_regex, path, 0, NULL, 0);
     method_reti = regexec(&method_regex, method, 0, NULL, 0);
     if (!path_reti && !method_reti) {
-      response = current->handler(path, body_start);
+      response = current->handler(path, body_start, server_args->database);
       break;
     }
 
@@ -92,6 +94,13 @@ void *server_handle_request(void *args) {
            response->status_code, response->status_message,
            response->body_length, response->body);
   send(*server_args->client_fd, resp, BUFFER_SIZE * 2, 0);
+  free(response);
+  free(server_args);
+  close(socket_fd);
+
+  // This will prevent the buffer from being used after the function returns
+  buffer[0] = '\0';
+
   return NULL;
 }
 
@@ -140,6 +149,7 @@ void server_start(Server_Configs *server_configs) {
     Server_Handle_Args *args = malloc(sizeof(Server_Handle_Args));
     args->client_fd = new_socket;
     args->routes = server_configs->routes;
+    args->database = server_configs->database;
     pthread_create(&thread, NULL, server_handle_request, (void *)args);
     pthread_detach(thread);
   }

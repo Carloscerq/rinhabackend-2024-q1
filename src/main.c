@@ -1,3 +1,4 @@
+#include "headers/database.h"
 #include "headers/logs.h"
 #include "headers/routes.h"
 #include "headers/server.h"
@@ -9,8 +10,8 @@
 
 int main() {
   log_info("Configuring server...");
-  Server_Configs *server_configs = server_configs_create(8080);
 
+  Server_Configs *server_configs = server_configs_create(8080, connect_to_db());
   log_info("Adding functions to server...");
   server_add_route(server_configs, "/clientes/[0-9]+/transacoes$",
                    route_transacoes, METHOD_GET);

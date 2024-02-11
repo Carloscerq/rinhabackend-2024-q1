@@ -3,10 +3,7 @@
 #include "headers/utils.h"
 #include <stdlib.h>
 
-Route_Response *route_transacoes(char *path, char *body) {
-  log_debug(path);
-  log_debug(body);
-
+Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
   log_debug("Getting id from path...");
   char *id = get_id_from_path(path);
 
@@ -24,7 +21,6 @@ Route_Response *route_transacoes(char *path, char *body) {
   log_debug("Parsing from json...");
   Transacoes_Body *data = parse_transacoes_json(body);
   if (!data) {
-    log_error("Failed to parse json");
     Route_Response *response = malloc(sizeof(Route_Response));
     response->body = "Failed to parse json";
     response->status_code = "400";
@@ -38,15 +34,12 @@ Route_Response *route_transacoes(char *path, char *body) {
   response->body = "func 1";
   response->status_code = "200";
   response->status_message = "OK";
-  response->body_length = 30;
+  response->body_length = 6;
 
   return response;
 }
 
-Route_Response *route_extrato(char *path, char *body) {
-  log_debug(path);
-  log_debug(body);
-
+Route_Response *route_extrato(char *path, char *body, PGconn *database) {
   log_debug("Getting id from path...");
   char *id = get_id_from_path(path);
 
