@@ -34,7 +34,8 @@ void server_stop(Server_Configs *server_configs) {
 }
 
 void server_add_route(Server_Configs *configs, char *route,
-                      Route_Response *(*handler)(char *path, char *body), char *method) {
+                      Route_Response *(*handler)(char *path, char *body),
+                      char *method) {
   llist_add(configs->routes, route, handler, method);
 }
 
@@ -53,8 +54,8 @@ void *server_handle_request(void *args) {
   sscanf(buffer, "%s %s %s", method, path, protocol);
   body_start = strstr(buffer, "\r\n\r\n") + 4;
   Linked_List_Node *current = server_args->routes->head;
+  regex_t path_regex, method_regex;
   while (current != NULL) {
-    regex_t path_regex, method_regex;
 
     int path_reti = regcomp(&path_regex, current->path, REG_EXTENDED);
     int method_reti = regcomp(&method_regex, current->method, REG_EXTENDED);
@@ -72,6 +73,9 @@ void *server_handle_request(void *args) {
 
     current = current->next;
   }
+
+  regfree(&path_regex);
+  regfree(&method_regex);
 
   if (response == NULL) {
     response = malloc(sizeof(Route_Response));
