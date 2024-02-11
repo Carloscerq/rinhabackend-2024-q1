@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define VALUE_FIELD "\"valor\":"
+#define VALUE_FIELD "\"valor\""
 #define VALUE_FIELD_SIZE 8
-#define TYPE_FIELD "\"tipo\":"
+#define TYPE_FIELD "\"tipo\""
 #define TYPE_FIELD_SIZE 7
-#define DESCRIPTION_FIELD "\"descricao\":"
+#define DESCRIPTION_FIELD "\"descricao\""
 #define DESCRIPTION_FIELD_SIZE 13
 
 char *get_id_from_path(char *path) {

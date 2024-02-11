@@ -1,6 +1,7 @@
 #include "headers/database.h"
 #include "headers/logs.h"
 #include "headers/utils.h"
+#include <stdlib.h>
 #define DB_CONNECT_BUFFER_SIZE 256
 
 PGconn *connect_to_db() {
@@ -20,6 +21,7 @@ PGconn *connect_to_db() {
     log_error("Connection to database failed");
     log_error(PQerrorMessage(conn));
     PQfinish(conn);
+    exit(EXIT_FAILURE);
     return NULL;
   }
 
