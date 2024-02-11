@@ -34,7 +34,7 @@ void server_stop(Server_Configs *server_configs) {
 }
 
 void server_add_route(Server_Configs *configs, char *route,
-                      Route_Response *(*handler)(char *buffer), char *method) {
+                      Route_Response *(*handler)(char *path, char *body), char *method) {
   llist_add(configs->routes, route, handler, method);
 }
 
@@ -45,19 +45,19 @@ void *server_handle_request(void *args) {
 
   char buffer[BUFFER_SIZE], method[METHOD_SIZE], path[PATH_SIZE],
       protocol[PROTOCOL_SIZE];
+  char *body_start;
   int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
-  log_info("Request handled");
 
   Route_Response *response = NULL;
 
   sscanf(buffer, "%s %s %s", method, path, protocol);
+  body_start = strstr(buffer, "\r\n\r\n") + 4;
   Linked_List_Node *current = server_args->routes->head;
   while (current != NULL) {
     regex_t path_regex, method_regex;
 
     int path_reti = regcomp(&path_regex, current->path, REG_EXTENDED);
     int method_reti = regcomp(&method_regex, current->method, REG_EXTENDED);
-    log_debug(path);
     if (path_reti || method_reti) {
       log_error("Could not compile regex");
       exit(EXIT_FAILURE);
@@ -66,9 +66,7 @@ void *server_handle_request(void *args) {
     path_reti = regexec(&path_regex, path, 0, NULL, 0);
     method_reti = regexec(&method_regex, method, 0, NULL, 0);
     if (!path_reti && !method_reti) {
-      log_info("Match");
-      log_debug(current->path);
-      response = current->handler(buffer);
+      response = current->handler(path, body_start);
       break;
     }
 

@@ -7,5 +7,5 @@ typedef struct Route_Response {
   char *status_code;
 } Route_Response;
 
-Route_Response *route_transacoes(char *buffer);
-Route_Response *route_extrato(char *buffer);
+Route_Response *route_transacoes(char *path, char *body);
+Route_Response *route_extrato(char *path, char *body);

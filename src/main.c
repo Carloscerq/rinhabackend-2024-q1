@@ -1,11 +1,9 @@
-#include "headers/llist.h"
 #include "headers/logs.h"
 #include "headers/routes.h"
 #include "headers/server.h"
 #include <netinet/in.h>
 #include <pthread.h>
 #include <regex.h>
-#include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
