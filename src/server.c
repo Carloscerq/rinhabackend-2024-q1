@@ -30,22 +30,9 @@ void server_stop(Server_Configs *server_configs) {
   close(server_configs->socket_fd);
 }
 
-void server_add_route(Server_Configs *configs, char *route, void *callback,
-                      char *method) {
-  llist_add(configs->routes, route, callback, method);
-}
-
-Route_Response *func_example_(char *buffer) {
-  log_info(buffer);
-  char *response = "OK ----- This is the response from the server\nHello world";
-
-  log_info("Here is the client_fd:");
-  Route_Response *server_response = malloc(sizeof(Route_Response));
-  server_response->body = response;
-  server_response->body_length = strlen(response);
-  server_response->status_code = "200";
-  server_response->status_message = "ok";
-  return server_response;
+void server_add_route(Server_Configs *configs, char *route,
+                      Route_Response *(*handler)(char *buffer), char *method) {
+  llist_add(configs->routes, route, handler, method);
 }
 
 void *server_handle_request(void *args) {
@@ -57,7 +44,41 @@ void *server_handle_request(void *args) {
   int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
   log_info("Request handled");
 
-  Route_Response *response = func_example_(buffer);
+  Route_Response *response = NULL;
+
+  Linked_List_Node *current = server_args->routes->head;
+  log_info(buffer);
+  while (current != NULL) {
+    regex_t regex;
+    regmatch_t matches[1];
+
+    log_info(current->path);
+    int reti = regcomp(&regex, current->path, REG_EXTENDED);
+    if (reti) {
+      log_error("Could not compile regex");
+      exit(EXIT_FAILURE);
+    }
+
+    reti = regexec(&regex, buffer, 1, matches, 0);
+    printf("matches = %d\n", matches[0].rm_eo);
+    printf("Reti = %d\n", reti);
+    if (!reti) {
+      log_info("Match");
+      log_debug(current->path);
+      response = current->handler(buffer);
+      break;
+    }
+
+    current = current->next;
+  }
+
+  if (response == NULL) {
+    response = malloc(sizeof(Route_Response));
+    response->body = "Page not found";
+    response->body_length = strlen(response->body);
+    response->status_code = "404";
+    response->status_message = "not found";
+  }
 
   char resp[BUFFER_SIZE * 2];
   snprintf(resp, BUFFER_SIZE * 2,
