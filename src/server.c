@@ -13,6 +13,9 @@
 #define BUFFER_SIZE 1024
 #define MAX_CONNECTIONS 10
 #define PORT 8080
+#define METHOD_SIZE 10
+#define PATH_SIZE 256
+#define PROTOCOL_SIZE 10
 
 Server_Configs *server_configs_create(int port) {
   Server_Configs *server_configs = malloc(sizeof(Server_Configs));
@@ -40,29 +43,29 @@ void *server_handle_request(void *args) {
   int socket_fd = *server_args->client_fd;
   log_info("Handling request");
 
-  char buffer[BUFFER_SIZE];
+  char buffer[BUFFER_SIZE], method[METHOD_SIZE], path[PATH_SIZE],
+      protocol[PROTOCOL_SIZE];
   int valread = read(*server_args->client_fd, buffer, BUFFER_SIZE);
   log_info("Request handled");
 
   Route_Response *response = NULL;
 
+  sscanf(buffer, "%s %s %s", method, path, protocol);
   Linked_List_Node *current = server_args->routes->head;
-  log_info(buffer);
   while (current != NULL) {
-    regex_t regex;
-    regmatch_t matches[1];
+    regex_t path_regex, method_regex;
 
-    log_info(current->path);
-    int reti = regcomp(&regex, current->path, REG_EXTENDED);
-    if (reti) {
+    int path_reti = regcomp(&path_regex, current->path, REG_EXTENDED);
+    int method_reti = regcomp(&method_regex, current->method, REG_EXTENDED);
+    log_debug(path);
+    if (path_reti || method_reti) {
       log_error("Could not compile regex");
       exit(EXIT_FAILURE);
     }
 
-    reti = regexec(&regex, buffer, 1, matches, 0);
-    printf("matches = %d\n", matches[0].rm_eo);
-    printf("Reti = %d\n", reti);
-    if (!reti) {
+    path_reti = regexec(&path_regex, path, 0, NULL, 0);
+    method_reti = regexec(&method_regex, method, 0, NULL, 0);
+    if (!path_reti && !method_reti) {
       log_info("Match");
       log_debug(current->path);
       response = current->handler(buffer);

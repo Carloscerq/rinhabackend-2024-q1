@@ -2,6 +2,10 @@
 #include "llist.h"
 #include "routes.h"
 #define METHOD_GET "GET"
+#define METHOD_POST "POST"
+#define METHOD_PUT "PUT"
+#define METHOD_DELETE "DELETE"
+#define METHOD_PATCH "PATCH"
 
 typedef struct Server_Configs {
   int socket_fd;
