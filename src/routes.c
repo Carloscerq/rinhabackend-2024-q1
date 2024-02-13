@@ -85,10 +85,8 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
 
     return response;
   }
-  printf("Saldo: %d\n", saldo);
-  printf("Value: %d\n", data->value);
-  int new_saldo = saldo - data->value;
 
+  int new_saldo = saldo - data->value;
   if (new_saldo < -credito && data->type == 'd') {
     log_error("Insufficient funds");
 
@@ -115,6 +113,27 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
     response->status_code = "500";
     response->status_message = "Internal Server Error";
     response->body_length = 23;
+
+    return response;
+  }
+
+  log_debug("Adding transaction to database...");
+  snprintf(str_cmplt, MAX_QUERY_SIZE,
+           "insert into transacoes (client_id, operacao, quantidade, "
+           "descricao) values (%s, '%c', "
+           "%d, '%s')",
+           id, data->type, data->value, data->description);
+  PGresult *insert_result = PQexec(database, str_cmplt);
+  ExecStatusType insert_res_status = PQresultStatus(insert_result);
+  PQclear(insert_result);
+  if (insert_res_status != PGRES_COMMAND_OK) {
+    log_error("Failed to add transaction to database");
+
+    Route_Response *response = malloc(sizeof(Route_Response));
+    response->body = "Failed to add transaction to database";
+    response->status_code = "500";
+    response->status_message = "Internal Server Error";
+    response->body_length = 32;
 
     return response;
   }
