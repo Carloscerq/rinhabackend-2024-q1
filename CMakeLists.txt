@@ -6,8 +6,11 @@ project(${PROJECT_NAME})
 file(GLOB SOURCE_FILES "src/*.c" "src/*.h")
 add_executable("${PROJECT_NAME}.out" ${SOURCE_FILES})
 
-include_directories(/usr/include/postgresql/)
 
 find_package(PostgreSQL REQUIRED)
-message("PostgreSQL_INCLUDE_DIRS: ${PostgreSQL_INCLUDE_DIRS}")
-target_link_libraries("${PROJECT_NAME}.out" ${PostgreSQL_LIBRARIES})
+include_directories(${PostgreSQL_INCLUDE_DIRS})
+
+find_package(cJSON REQUIRED)
+include_directories(${CJSON_INCLUDE_DIRS})
+
+target_link_libraries("${PROJECT_NAME}.out" ${PostgreSQL_LIBRARIES} ${CJSON_LIBRARIES})

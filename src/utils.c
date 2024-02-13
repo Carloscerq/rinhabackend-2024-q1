@@ -1,20 +1,16 @@
 #include "headers/utils.h"
 #include "headers/logs.h"
 #include "headers/routes.h"
+#include <cjson/cJSON.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define VALUE_FIELD "\"valor\""
-#define VALUE_FIELD_SIZE 8
-#define TYPE_FIELD "\"tipo\""
-#define TYPE_FIELD_SIZE 7
-#define DESCRIPTION_FIELD "\"descricao\""
-#define DESCRIPTION_FIELD_SIZE 13
+#define NUMBER_REGEX "[0-9]+"
 
 char *get_id_from_path(char *path) {
   regex_t regex;
-  int reti = regcomp(&regex, "[0-9]+", REG_EXTENDED);
+  int reti = regcomp(&regex, NUMBER_REGEX, REG_EXTENDED);
   if (reti) {
     log_error("Failed to compile regex");
     return NULL;
@@ -38,54 +34,33 @@ char *get_id_from_path(char *path) {
 }
 
 Transacoes_Body *parse_transacoes_json(char *json) {
-  Transacoes_Body *transacoes = malloc(sizeof(Transacoes_Body));
-  char *value_str = strstr(json, VALUE_FIELD);
-  if (value_str == NULL) {
-    log_debug("Value not found...");
+  Transacoes_Body *resp = malloc(sizeof(Transacoes_Body));
+  cJSON *root = cJSON_Parse(json);
+
+  if (root == NULL) {
+    log_error("Failed to parse JSON");
+    cJSON_Delete(root);
     return NULL;
   }
 
-  transacoes->value = atof(value_str + VALUE_FIELD_SIZE);
+  cJSON *valor = cJSON_GetObjectItemCaseSensitive(root, "valor");
+  cJSON *tipo = cJSON_GetObjectItemCaseSensitive(root, "tipo");
+  cJSON *descricao = cJSON_GetObjectItemCaseSensitive(root, "descricao");
 
-  char *type_str = strstr(json, TYPE_FIELD);
-  if (type_str == NULL) {
-    log_debug("Type not found...");
+  if (valor == NULL || tipo == NULL || descricao == NULL ||
+      !cJSON_IsNumber(valor) || !cJSON_IsString(tipo) ||
+      !cJSON_IsString(descricao)) {
+    log_error("Failed to parse JSON");
+    cJSON_Delete(root);
     return NULL;
   }
 
-  char *type_value = strstr(type_str + TYPE_FIELD_SIZE, "\"") + 1;
-  if (type_value == NULL) {
-    log_debug("Type value not found...");
-    return NULL;
-  }
-  transacoes->type = *type_value;
+  resp->value = valor->valuedouble;
+  resp->type = strdup(tipo->valuestring)[0];
+  resp->description = strdup(descricao->valuestring);
+  cJSON_Delete(root);
 
-  char *description_str = strstr(json, DESCRIPTION_FIELD);
-  if (description_str == NULL) {
-    log_debug("Description not found...");
-    return NULL;
-  }
-
-  char *description_value =
-      strstr(description_str + DESCRIPTION_FIELD_SIZE, "\"") + 1;
-  if (description_value == NULL) {
-    log_debug("Description value not found...");
-    return NULL;
-  }
-
-  char *description_end = strstr(description_value, "\"");
-  if (description_end == NULL) {
-    log_debug("Description end not found...");
-    return NULL;
-  }
-
-  int description_size = description_end - description_value;
-  char *description = malloc(description_size + 1);
-  strncpy(description, description_value, description_size);
-  description[description_size] = '\0';
-  transacoes->description = description;
-
-  return transacoes;
+  return resp;
 }
 
 char *get_environment_variable(char *variable_name) {
