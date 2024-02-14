@@ -2,6 +2,7 @@
 #include "headers/logs.h"
 #include "headers/routes.h"
 #include <cjson/cJSON.h>
+#include <libpq-fe.h>
 #include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,4 +72,18 @@ char *get_environment_variable(char *variable_name) {
     log_error(variable_name);
     exit(EXIT_FAILURE);
   }
+}
+
+Route_Response *create_route_response(int status, char *message, char *body) {
+  Route_Response *response = malloc(sizeof(Route_Response));
+  response->status_code = malloc(4);
+  response->status_message = malloc(strlen(message) + 1);
+  response->body = malloc(strlen(body) + 1);
+
+  snprintf(response->status_code, 4, "%d", status);
+  strcpy(response->status_message, message);
+  strcpy(response->body, body);
+
+  response->body_length = strlen(body);
+  return response;
 }
