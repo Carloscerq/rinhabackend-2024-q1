@@ -1,4 +1,3 @@
-#include "headers/database.h"
 #include "headers/logs.h"
 #include "headers/server.h"
 #include <netinet/in.h>
