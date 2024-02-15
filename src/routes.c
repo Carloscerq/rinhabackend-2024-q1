@@ -4,7 +4,9 @@
 #include "headers/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
-#define MAX_RESP_SIZE 1000
+#include <string.h>
+#include <time.h>
+#define MAX_RESP_SIZE 5000
 
 Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
   log_debug("Getting id from path...");
@@ -83,5 +85,37 @@ Route_Response *route_extrato(char *path, char *body, PGconn *database) {
     return create_route_response(404, "Not Found", "User not found");
   }
 
-  return create_route_response(200, "OK", "OK");
+  log_debug("Getting transactions from cliente...");
+  Transacao transactions[10];
+  int amount_of_transactions =
+      find_transacao_by_cliente_id(database, id, 10, transactions);
+
+  char str_cmplt[MAX_RESP_SIZE];
+
+  struct timespec spec;
+  clock_gettime(CLOCK_REALTIME, &spec);
+  struct tm timeinfo;
+  gmtime_r(&spec.tv_sec, &timeinfo);
+  char iso_time[30];
+  strftime(iso_time, sizeof(iso_time), "%Y-%m-%dT%H:%M:%S", &timeinfo);
+  sprintf(iso_time + 19, ".%06ldZ", spec.tv_nsec / 1000);
+
+  sprintf(str_cmplt,
+          "{\"saldo\": {\"total\": %d, \"data_extrato\": \"%s\", "
+          "\"limite\": %d}, \"ultimas_transacoes\": [",
+          user->saldo, iso_time, user->credito);
+
+  for (int i = 0; i < amount_of_transactions; i++) {
+    snprintf(str_cmplt + strlen(str_cmplt), MAX_RESP_SIZE - strlen(str_cmplt),
+             "{\"valor\": %d, \"tipo\": \"%c\", \"descricao\": \"%s\", "
+             "\"realizada_em\": \"%s\"},",
+             transactions[i].quantidade, transactions[i].operacao,
+             transactions[i].descricao, transactions[i].timestamp);
+  }
+
+  // Overwrite the last comma
+  snprintf(str_cmplt + strlen(str_cmplt) - 1, MAX_RESP_SIZE - strlen(str_cmplt),
+           "]}");
+
+  return create_route_response(200, "OK", str_cmplt);
 }
