@@ -72,6 +72,8 @@ char *get_environment_variable(char *variable_name) {
     log_error(variable_name);
     exit(EXIT_FAILURE);
   }
+
+  return resp;
 }
 
 Route_Response *create_route_response(int status, char *message, char *body) {

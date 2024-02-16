@@ -2,6 +2,7 @@
 #include "headers/llist.h"
 #include "headers/logs.h"
 #include "headers/routes.h"
+#include "headers/utils.h"
 #include <netinet/in.h>
 #include <pthread.h>
 #include <regex.h>
@@ -80,11 +81,7 @@ void *server_handle_request(void *args) {
   regfree(&method_regex);
 
   if (response == NULL) {
-    response = malloc(sizeof(Route_Response));
-    response->body = "Page not found";
-    response->body_length = strlen(response->body);
-    response->status_code = "404";
-    response->status_message = "not found";
+    response = create_route_response(404, "Not Found", "Not Found");
   }
 
   char resp[BUFFER_SIZE * 2];

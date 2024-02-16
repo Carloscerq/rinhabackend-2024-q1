@@ -1,5 +1,6 @@
 #include "headers/logs.h"
 #include "headers/server.h"
+#include "headers/database.h"
 #include <netinet/in.h>
 #include <pthread.h>
 #include <regex.h>
