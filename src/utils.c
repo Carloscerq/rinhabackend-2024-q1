@@ -72,17 +72,22 @@ char *get_environment_variable(char *variable_name) {
     log_error(variable_name);
     exit(EXIT_FAILURE);
   }
+
+  return resp;
 }
 
-Route_Response *create_route_response(int status, char *message, char *body) {
+Route_Response *create_route_response(int status, char *message, char *body,
+                                      char *content_type) {
   Route_Response *response = malloc(sizeof(Route_Response));
   response->status_code = malloc(4);
   response->status_message = malloc(strlen(message) + 1);
   response->body = malloc(strlen(body) + 1);
+  response->content_type = malloc(strlen(content_type) + 1);
 
   snprintf(response->status_code, 4, "%d", status);
   strcpy(response->status_message, message);
   strcpy(response->body, body);
+  strcpy(response->content_type, content_type);
 
   response->body_length = strlen(body);
   return response;
