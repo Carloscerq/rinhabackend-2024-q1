@@ -6,6 +6,7 @@ typedef struct Route_Response {
   int body_length;
   char *status_message;
   char *status_code;
+  char *content_type;
 } Route_Response;
 
 typedef struct Transacoes_Body {

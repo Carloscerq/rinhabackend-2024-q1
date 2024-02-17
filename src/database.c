@@ -38,9 +38,7 @@ Cliente *find_cliente_by_id(PGconn *database, char *id) {
 
   PGresult *result = PQexec(database, str_cmplt);
   ExecStatusType res_status = PQresultStatus(result);
-  if (res_status != PGRES_TUPLES_OK) {
-    log_debug("User not found");
-
+  if (res_status != PGRES_TUPLES_OK || PQntuples(result) <= 1) {
     PQclear(result);
     return NULL;
   }
@@ -48,6 +46,7 @@ Cliente *find_cliente_by_id(PGconn *database, char *id) {
   Cliente *resp = malloc(sizeof(Cliente));
   resp->credito = atoi(PQgetvalue(result, 0, 0));
   resp->saldo = atoi(PQgetvalue(result, 0, 1));
+  PQclear(result);
   return resp;
 }
 

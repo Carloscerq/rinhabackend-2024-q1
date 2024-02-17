@@ -81,15 +81,15 @@ void *server_handle_request(void *args) {
   regfree(&method_regex);
 
   if (response == NULL) {
-    response = create_route_response(404, "Not Found", "Not Found");
+    response = create_route_response(404, "Not Found", "Not Found", "text/plain");
   }
 
   char resp[BUFFER_SIZE * 2];
   snprintf(resp, BUFFER_SIZE * 2,
-           "http/1.1 %s %s\r\ncontent-type: text/plain\r\ncontent-length: "
+           "http/1.1 %s %s\r\ncontent-type: %s\r\ncontent-length: "
            "%d\r\n\r\n%s",
            response->status_code, response->status_message,
-           response->body_length, response->body);
+           response->content_type, response->body_length, response->body);
   send(*server_args->client_fd, resp, BUFFER_SIZE * 2, 0);
   free(response);
   free(server_args);

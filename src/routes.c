@@ -15,13 +15,14 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
   if (!id) {
     log_debug("Failed to get id from path");
     return create_route_response(400, "Bad Request",
-                                 "Failed to get id from path");
+                                 "Failed to get id from path", "text/plain");
   }
 
   log_debug("Parsing from json...");
   Transacoes_Body *data = parse_transacoes_json(body);
   if (!data) {
-    return create_route_response(400, "Bad Request", "Failed to parse json");
+    return create_route_response(400, "Bad Request", "Failed to parse json",
+                                 "text/plain");
   }
 
   log_debug("Executing query...");
@@ -29,26 +30,28 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
   Cliente *user = find_cliente_by_id(database, id);
   if (!user) {
     log_debug("User not found");
-    return create_route_response(404, "Not Found", "User not found");
+    return create_route_response(404, "Not Found", "User not found",
+                                 "text/plain");
   }
 
   if (data->type != 'c' && data->type != 'd') {
     log_debug("Invalid transaction type");
-    return create_route_response(400, "Bad Request",
-                                 "Invalid transaction type");
+    return create_route_response(400, "Bad Request", "Invalid transaction type",
+                                 "text/plain");
   }
 
   int new_saldo = user->saldo - data->value;
   if (new_saldo < -user->credito && data->type == 'd') {
     log_debug("Insufficient funds");
-    return create_route_response(422, "Bad Request", "Insufficient funds");
+    return create_route_response(422, "Bad Request", "Insufficient funds",
+                                 "text/plain");
   }
 
   if (update_cliente_saldo(database, id, new_saldo)) {
     log_error("Failed to update saldo");
     Route_Response *response = malloc(sizeof(Route_Response));
     return create_route_response(500, "Internal Server Error",
-                                 "Failed to update saldo");
+                                 "Failed to update saldo", "text/plain");
 
     return response;
   }
@@ -58,7 +61,8 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
                        data->description)) {
     log_error("Failed to add transaction to database");
     return create_route_response(500, "Internal Server Error",
-                                 "Failed to add transaction to database");
+                                 "Failed to add transaction to database",
+                                 "text/plain");
   }
 
   log_debug("Saldo updated successfully");
@@ -67,7 +71,7 @@ Route_Response *route_transacoes(char *path, char *body, PGconn *database) {
   // Get the json response
   snprintf(str_cmplt, MAX_RESP_SIZE, "{\"saldo\": %d, \"limite\": %d}",
            new_saldo, user->credito);
-  return create_route_response(200, "OK", str_cmplt);
+  return create_route_response(200, "OK", str_cmplt, "application/json");
 }
 
 Route_Response *route_extrato(char *path, char *body, PGconn *database) {
@@ -76,13 +80,15 @@ Route_Response *route_extrato(char *path, char *body, PGconn *database) {
 
   if (!id) {
     log_debug("Failed to get id from path");
-    return create_route_response(404, "Bad Request", "Id is missing");
+    return create_route_response(404, "Bad Request", "Id is missing",
+                                 "text/plain");
   }
 
   Cliente *user = find_cliente_by_id(database, id);
   if (!user) {
     log_debug("User not found");
-    return create_route_response(404, "Not Found", "User not found");
+    return create_route_response(404, "Not Found", "User not found",
+                                 "text/plain");
   }
 
   log_debug("Getting transactions from cliente...");
@@ -105,6 +111,7 @@ Route_Response *route_extrato(char *path, char *body, PGconn *database) {
           "\"limite\": %d}, \"ultimas_transacoes\": [",
           user->saldo, iso_time, user->credito);
 
+
   for (int i = 0; i < amount_of_transactions; i++) {
     snprintf(str_cmplt + strlen(str_cmplt), MAX_RESP_SIZE - strlen(str_cmplt),
              "{\"valor\": %d, \"tipo\": \"%c\", \"descricao\": \"%s\", "
@@ -113,9 +120,13 @@ Route_Response *route_extrato(char *path, char *body, PGconn *database) {
              transactions[i].descricao, transactions[i].timestamp);
   }
 
+  int overwrite_comma = -1;
+  if (amount_of_transactions == 0) {
+    overwrite_comma = 0;
+  }
   // Overwrite the last comma
-  snprintf(str_cmplt + strlen(str_cmplt) - 1, MAX_RESP_SIZE - strlen(str_cmplt),
-           "]}");
+  snprintf(str_cmplt + strlen(str_cmplt) - overwrite_comma,
+           MAX_RESP_SIZE - strlen(str_cmplt), "]}");
 
-  return create_route_response(200, "OK", str_cmplt);
+  return create_route_response(200, "OK", str_cmplt, "application/json");
 }
