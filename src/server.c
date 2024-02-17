@@ -86,7 +86,7 @@ void *server_handle_request(void *args) {
 
   char resp[BUFFER_SIZE * 2];
   snprintf(resp, BUFFER_SIZE * 2,
-           "http/1.1 %s %s\r\ncontent-type: %s\r\ncontent-length: "
+           "HTTP/1.1 %s %s\r\ncontent-type: %s\r\ncontent-length: "
            "%d\r\n\r\n%s",
            response->status_code, response->status_message,
            response->content_type, response->body_length, response->body);
